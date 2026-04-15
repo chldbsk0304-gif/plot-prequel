@@ -366,21 +366,6 @@
     <p>테마·제목·키워드를 입력하면 인스타그램 캡션을 자동으로 만들어드려요.</p>
   </header>
 
-  <!-- ── Section 1: API Key ── -->
-  <div class="card">
-    <div class="card-label">API 키</div>
-    <div class="api-row">
-      <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"
-             aria-label="Anthropic API 키" autofocus />
-      <button class="btn-sm" id="btn-toggle-key" aria-label="API 키 표시/숨기기">보기</button>
-    </div>
-    <div id="api-key-error" class="field-error" role="alert">API 키를 입력해주세요.</div>
-    <p class="api-notice">
-      키는 이 탭에서만 임시 유지되며 외부로 전송되지 않아요. 탭을 닫으면 삭제됩니다.&nbsp;
-      <a href="https://console.anthropic.com" target="_blank" rel="noopener">키 발급 →</a>
-    </p>
-  </div>
-
   <!-- ── Section 2: Theme ── -->
   <div class="card">
     <div class="card-label">테마 선택</div>
@@ -545,6 +530,11 @@ Bias:
 아래 목록에서 적재적소에만 사용. 남발 금지.
 𐐪𐑂 ⋆˚ ˖⁺ ᯓ★ ꔣ₊˚ 𝜗𝜚 ✧ ☆ ♡ ᕷ˖° ʚɞ ᰔᩚ ˚｡ ⑅ ·.˚ ₊: ⑉♥ ˚ʚ♡ɞ˚ ⋰˚☆ ·₊˚❀`;
 
+// 페이지 로드 시 첫 입력 필드 자동 포커스
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('input-title').focus();
+});
+
 // ─────────────────────────────────────────────
 // 테마 / 액센트
 // ─────────────────────────────────────────────
@@ -575,26 +565,6 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 // ─────────────────────────────────────────────
 // API 키 토글
 // ─────────────────────────────────────────────
-const apiKeyInput  = document.getElementById('api-key');
-const btnToggleKey = document.getElementById('btn-toggle-key');
-
-// sessionStorage 복원 (탭 닫으면 자동 삭제)
-const _savedKey = sessionStorage.getItem('plot_api_key');
-if (_savedKey) apiKeyInput.value = _savedKey;
-
-btnToggleKey.addEventListener('click', () => {
-  const hidden = apiKeyInput.type === 'password';
-  apiKeyInput.type = hidden ? 'text' : 'password';
-  btnToggleKey.textContent = hidden ? '숨기기' : '보기';
-});
-
-apiKeyInput.addEventListener('input', () => {
-  sessionStorage.setItem('plot_api_key', apiKeyInput.value);
-  if (apiKeyInput.value.trim()) {
-    setInputError(apiKeyInput, false);
-    clearFieldError(document.getElementById('api-key-error'));
-  }
-});
 
 // ─────────────────────────────────────────────
 // 글자 수 카운터
@@ -659,10 +629,6 @@ function clearGlobalError() {
 function validate() {
   let ok = true;
   clearGlobalError();
-  if (!apiKeyInput.value.trim()) {
-    showFieldError(document.getElementById('api-key-error'), 'API 키를 입력해주세요.');
-    setInputError(apiKeyInput, true); ok = false;
-  }
   if (!activeTheme) {
     showFieldError(document.getElementById('theme-error'), '테마를 선택해주세요.');
     ok = false;
@@ -703,13 +669,10 @@ async function generateCaption() {
   clearGlobalError();
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKeyInput.value.trim(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
         model: 'claude-opus-4-5',
