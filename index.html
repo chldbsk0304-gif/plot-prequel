@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plot Prequel 인스타그램 캡션 자동 생성기" />
+  <title>Plot Prequel — 캡션 생성기</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #f5f5f5;
+      --surface:     #ffffff;
+      --border:      #e0e0e0;
+      --text:        #1a1a1a;
+      --text-sub:    #6b6b6b;
+      --text-placeholder: #aaaaaa;
+      --input-bg:    #fafafa;
+      --error:       #e03e3e;
+      --error-bg:    #fff5f5;
+
+      --lifestyle:   #5DCAA5;
+      --viral:       #EF9F27;
+      --bias:        #ED93B1;
+      --accent:      #5DCAA5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:          #111111;
+        --surface:     #1e1e1e;
+        --border:      #2e2e2e;
+        --text:        #f0f0f0;
+        --text-sub:    #888888;
+        --text-placeholder: #555555;
+        --input-bg:    #161616;
+        --error-bg:    #2a1515;
+      }
+    }
+
+    html { font-size: 15px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    .wrapper {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Header ── */
+    header { text-align: center; padding: 32px 0 16px; }
+
+    .logo { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+    .logo-mark {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.3s;
+    }
+    .logo-mark svg { width: 18px; height: 18px; fill: #fff; }
+
+    .logo-name { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+
+    header h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+    header p  { font-size: 0.875rem; color: var(--text-sub); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .card-label {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-sub); margin-bottom: 14px;
+    }
+
+    /* ── Form elements ── */
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.9rem; font-family: inherit;
+      color: var(--text); outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+    input[type="text"]::placeholder,
+    input[type="password"]::placeholder,
+    textarea::placeholder { color: var(--text-placeholder); }
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    textarea:focus { border-color: var(--accent); }
+    input.error, textarea.error { border-color: var(--error) !important; }
+
+    .field { position: relative; }
+    .field + .field { margin-top: 12px; }
+
+    .field-top {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 6px;
+    }
+
+    .field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-sub); }
+
+    .char-count { font-size: 0.7rem; color: var(--text-placeholder); font-variant-numeric: tabular-nums; }
+    .char-count.near { color: var(--viral); }
+    .char-count.full { color: var(--error); }
+
+    .field-error { font-size: 0.75rem; color: var(--error); margin-top: 5px; display: none; }
+    .field-error.visible { display: block; }
+
+    /* ── API section ── */
+    .api-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .api-row input { flex: 1; }
+    .api-notice { font-size: 0.75rem; color: var(--text-sub); line-height: 1.5; }
+    .api-notice a { color: var(--accent); text-decoration: none; transition: opacity 0.15s; }
+    .api-notice a:hover { opacity: 0.7; }
+
+    /* ── Buttons ── */
+    .btn-sm {
+      padding: 10px 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface); color: var(--text-sub);
+      font-size: 0.8rem; font-family: inherit;
+      cursor: pointer; white-space: nowrap;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Theme Selector ── */
+    .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    .theme-btn {
+      padding: 12px 8px; border-radius: 10px;
+      border: 2px solid var(--border); background: transparent;
+      cursor: pointer; font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: center;
+    }
+    .theme-btn .theme-emoji { font-size: 1.1rem; display: block; margin-bottom: 6px; }
+    .theme-btn .theme-name  { font-size: 0.8rem; font-weight: 700; display: block; color: var(--text); }
+    .theme-btn .theme-desc  { font-size: 0.7rem; color: var(--text-sub); margin-top: 2px; display: block; }
+
+    .theme-btn.active[data-theme="lifestyle"] { border-color: var(--lifestyle); background: rgba(93,202,165,0.08); }
+    .theme-btn.active[data-theme="viral"]     { border-color: var(--viral);     background: rgba(239,159,39,0.08); }
+    .theme-btn.active[data-theme="bias"]      { border-color: var(--bias);      background: rgba(237,147,177,0.08); }
+
+    @media (prefers-color-scheme: dark) {
+      .theme-btn.active[data-theme="lifestyle"] { background: rgba(93,202,165,0.12); }
+      .theme-btn.active[data-theme="viral"]     { background: rgba(239,159,39,0.12); }
+      .theme-btn.active[data-theme="bias"]      { background: rgba(237,147,177,0.12); }
+    }
+
+    /* ── Error banner ── */
+    .error-banner {
+      display: none;
+      background: var(--error-bg); border: 1px solid var(--error);
+      border-radius: 10px; padding: 12px 16px;
+      font-size: 0.85rem; color: var(--error); line-height: 1.5;
+    }
+    .error-banner.visible { display: block; }
+
+    /* ────────────────────────────────────────
+       SPECIAL CHAR PICKER
+    ──────────────────────────────────────── */
+    .picker-toggle {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .picker-toggle .card-label { margin-bottom: 0; }
+
+    .picker-arrow { font-size: 0.7rem; color: var(--text-sub); transition: transform 0.2s; }
+    .picker-toggle.open .picker-arrow { transform: rotate(180deg); }
+
+    .picker-body { display: none; margin-top: 14px; }
+    .picker-body.open { display: block; }
+
+    /* search */
+    .picker-search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .picker-search-row input { flex: 1; }
+
+    .picker-search-preview {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; margin-bottom: 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    .preview-char {
+      font-size: 1.5rem; line-height: 1;
+      min-width: 28px; text-align: center;
+    }
+    .preview-info {
+      font-size: 0.72rem; color: var(--text-sub);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      flex: 1; word-break: break-all;
+    }
+
+    /* tabs */
+    .picker-tabs {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .picker-tab {
+      padding: 5px 11px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      font-family: inherit; font-size: 0.72rem; font-weight: 600;
+      color: var(--text-sub); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .picker-tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+
+    /* grid wrapper */
+    .picker-grid-wrap {
+      max-height: 300px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .picker-grid-wrap::-webkit-scrollbar { width: 4px; }
+    .picker-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .picker-loading {
+      text-align: center; color: var(--text-placeholder);
+      font-size: 0.8rem; padding: 24px 0;
+    }
+
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 36px);
+      gap: 2px;
+    }
+
+    /* char cell */
+    .pchar-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid transparent; border-radius: 6px;
+      background: transparent; cursor: pointer;
+      font-size: 1rem; color: var(--text);
+      transition: background 0.1s, border-color 0.1s;
+      position: relative; overflow: hidden;
+      padding: 0;
+    }
+    .pchar-btn:hover {
+      background: var(--input-bg);
+      border-color: var(--border);
+    }
+    /* copied overlay */
+    .pchar-btn.copied {
+      background: var(--accent) !important;
+      border-color: var(--accent) !important;
+      color: transparent;
+    }
+    .pchar-btn.copied::after {
+      content: '✓';
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 0.85rem; font-weight: 700;
+    }
+
+    /* curated items can be wider */
+    .pchar-btn.multi {
+      width: auto; min-width: 36px;
+      padding: 0 7px; font-size: 0.75rem;
+      letter-spacing: 0;
+    }
+
+    /* ── Generate Button ── */
+    .btn-generate {
+      width: 100%; padding: 14px;
+      border: none; border-radius: 10px;
+      background: var(--accent); color: #fff;
+      font-size: 0.95rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; letter-spacing: -0.01em;
+      transition: background 0.3s, opacity 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-generate:hover:not(:disabled) { opacity: 0.88; }
+    .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .dots { display: none; gap: 4px; align-items: center; }
+    .btn-generate.loading .dots { display: inline-flex; }
+    .btn-generate.loading .btn-label { display: none; }
+
+    .dots span {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: #fff; animation: blink 1.2s infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%,80%,100% { opacity: 0.2; }
+      40%          { opacity: 1; }
+    }
+
+    /* ── Result ── */
+    .result-card { display: none; }
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+    .result-header .card-label { margin-bottom: 0; }
+    .result-actions { display: flex; gap: 6px; }
+
+    .result-body {
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px;
+      min-height: 120px; font-size: 0.875rem; line-height: 1.9;
+      color: var(--text); white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 640px) {
+      body { padding: 16px 12px 48px; }
+      header h1 { font-size: 1.25rem; }
+      .picker-tab { font-size: 0.68rem; padding: 4px 9px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark" id="logo-mark">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 4h14v2H3V4zm0 5h10v2H3V9zm0 5h12v2H3v-2z"/>
+        </svg>
+      </div>
+      <span class="logo-name">Plot Prequel</span>
+    </div>
+    <h1>캡션 생성기</h1>
+    <p>테마·제목·키워드를 입력하면 인스타그램 캡션을 자동으로 만들어드려요.</p>
+  </header>
+
+  <!-- ── Section 1: API Key ── -->
+  <div class="card">
+    <div class="card-label">API 키</div>
+    <div class="api-row">
+      <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"
+             aria-label="Anthropic API 키" autofocus />
+      <button class="btn-sm" id="btn-toggle-key" aria-label="API 키 표시/숨기기">보기</button>
+    </div>
+    <div id="api-key-error" class="field-error" role="alert">API 키를 입력해주세요.</div>
+    <p class="api-notice">
+      키는 이 탭에서만 임시 유지되며 외부로 전송되지 않아요. 탭을 닫으면 삭제됩니다.&nbsp;
+      <a href="https://console.anthropic.com" target="_blank" rel="noopener">키 발급 →</a>
+    </p>
+  </div>
+
+  <!-- ── Section 2: Theme ── -->
+  <div class="card">
+    <div class="card-label">테마 선택</div>
+    <div class="theme-grid">
+      <button class="theme-btn" data-theme="lifestyle">
+        <span class="theme-emoji">🏝️</span>
+        <span class="theme-name">Lifestyle</span>
+        <span class="theme-desc">일상·여행·취향</span>
+      </button>
+      <button class="theme-btn" data-theme="viral">
+        <span class="theme-emoji">🔥</span>
+        <span class="theme-name">Viral</span>
+        <span class="theme-desc">트렌드·핫이슈</span>
+      </button>
+      <button class="theme-btn" data-theme="bias">
+        <span class="theme-emoji">💜</span>
+        <span class="theme-name">Bias</span>
+        <span class="theme-desc">덕질·최애·팬심</span>
+      </button>
+    </div>
+    <div id="theme-error" class="field-error" role="alert" style="margin-top:10px;">테마를 선택해주세요.</div>
+  </div>
+
+  <!-- ── Section 3: Input Form ── -->
+  <div class="card">
+    <div class="card-label">캡션 정보 입력</div>
+
+    <div class="field">
+      <div class="field-top">
+        <label class="field-label" for="input-title">매거진 제목</label>
+        <span class="char-count" id="count-title">0 / 80</span>
+      </div>
+      <input type="text" id="input-title" maxlength="80"
+             placeholder="예) 제주 카페 투어, 신보 발매 기념" />
+      <div id="title-error" class="field-error" role="alert">매거진 제목을 입력해주세요.</div>
+    </div>
+
+    <div class="field">
+      <div class="field-top">
+        <label class="field-label" for="input-keywords">핵심 키워드</label>
+        <span class="char-count" id="count-keywords">0 / 120</span>
+      </div>
+      <input type="text" id="input-keywords" maxlength="120"
+             placeholder="쉼표로 구분해서 입력  예) 감성, 힐링, 오션뷰" />
+      <div id="keywords-error" class="field-error" role="alert">핵심 키워드를 입력해주세요.</div>
+    </div>
+
+    <div class="field">
+      <div class="field-top">
+        <label class="field-label" for="input-extra">
+          추가 요청사항&nbsp;<span style="font-weight:400;opacity:.55">(선택)</span>
+        </label>
+      </div>
+      <textarea id="input-extra" rows="3"
+                placeholder="예: 댓글 이벤트 포함 / 톤을 더 가볍게"></textarea>
+    </div>
+  </div>
+
+  <!-- ── Section 4: Special Char Picker ── -->
+  <div class="card" id="section-picker">
+    <div class="picker-toggle" id="picker-toggle">
+      <div class="card-label">특수문자 픽커</div>
+      <span class="picker-arrow">▼</span>
+    </div>
+
+    <div class="picker-body" id="picker-body">
+
+      <!-- Search -->
+      <div class="picker-search-row">
+        <input type="text" id="picker-search"
+               placeholder="문자 직접 입력 또는 U+XXXX"
+               autocomplete="off" spellcheck="false"
+               aria-label="문자 검색 또는 유니코드 입력" />
+        <button class="btn-sm" id="btn-search-copy" style="display:none" aria-label="검색된 문자 복사">복사</button>
+      </div>
+      <div class="picker-search-preview" id="picker-search-preview" style="display:none">
+        <span class="preview-char" id="preview-char"></span>
+        <span class="preview-info" id="preview-info"></span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="picker-tabs" id="picker-tabs"></div>
+
+      <!-- Grid -->
+      <div class="picker-grid-wrap" id="picker-grid-wrap">
+        <div class="picker-loading" id="picker-loading">문자 로딩 중…</div>
+        <div class="picker-grid" id="picker-grid" style="display:none"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Global error ── -->
+  <div class="error-banner" id="global-error" role="alert"></div>
+
+  <!-- ── Generate Button ── -->
+  <button class="btn-generate" id="btn-generate" aria-label="캡션 생성하기">
+    <span class="btn-label">캡션 생성하기</span>
+    <span class="dots"><span></span><span></span><span></span></span>
+  </button>
+
+  <!-- ── Result ── -->
+  <div class="card result-card" id="section-result">
+    <div class="result-header">
+      <div class="card-label">생성된 캡션</div>
+      <div class="result-actions">
+        <button class="btn-sm" id="btn-copy" aria-label="캡션 전체 복사">전체 복사</button>
+        <button class="btn-sm" id="btn-regen" aria-label="캡션 다시 생성">다시 생성</button>
+      </div>
+    </div>
+    <div class="result-body" id="result-body"></div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────
+// 시스템 프롬프트
+// ─────────────────────────────────────────────
+const SYSTEM_PROMPT = `당신은 개인 취향 아카이빙 플랫폼 'Plot'의 프리퀄 매거진 에디터입니다.
+핀터레스트 감성의 '외국 언니' 무드로, 세련되면서도 친근한 말투를 사용합니다.
+
+[출력 형식 — 반드시 이 구조를 지킵니다]
+Towards [테마]🏝️
+[텍스트 이모티콘] [핵심 키워드형 주제 문구] [텍스트 이모티콘]
+(바디)
+⋆﹥━━━━━━━━━━━━━━━﹤⋆
+팀플랏과 함께하는 취향 아카이빙˖⁺
+[해시태그]
+
+[테마별 바디 작성 규칙]
+
+Lifestyle:
+트렌드 배경 설명(2-3줄) → 에디터 시점 관찰 멘트 → 마무리 질문
+마무리 질문은 아래 3가지 패턴을 순환 사용. "취향은 무엇인가요?"로만 끝내지 말 것:
+  ① 저장 유도형: "오늘 레퍼런스 하나 골라가요" 류
+  ② 공감 확인형: "지금 당장 써보고 싶은 건 어떤 건가요?" 류
+  ③ 취향 질문형: "여러분의 [키워드]는 무엇인가요?" 류
+
+Viral:
+짧은 공감 훅(1줄) → 콘텐츠 소개(1-2줄) → 댓글 참여 유도 또는 질문
+- 감탄은 한 문장 이내
+- 이모티콘 문장 끝에 1-2개만
+- "완전", "진짜", "너무" 3연속 사용 금지
+- "이거 완전 나" 대신 "나만 이래?" 무드. 공감을 주장하지 않고 슬쩍 건네는 톤
+
+Bias:
+에디터 시점 진입 → 매력 포인트 관찰 묘사 → 취향/질문 마무리
+- 열정을 숨기되 배어나오는 느낌. 디테일 관찰자 무드.
+- 애정은 문장 사이에 자연스럽게 스며들게
+- 절대 금지 표현: "심장 강타", "심장 폭행", "무자비하게", "사랑보다 깊은 감정"
+- 대체 표현 예시: "볼수록 디테일이 보이는" / "알면 알수록 빠져드는" / "오래 볼수록 좋아지는 타입"
+
+[해시태그 규칙]
+주제에 맞는 변동 태그 5개 + 아래 고정 태그 9개 = 총 14개 내외
+고정 태그 (항상 마지막에 포함):
+#핀터레스트 #핀터레스트감성 #pinterest #플랏 #Teamplot #Plot #매거진 #웹매거진 #패션매거진
+
+[텍스트 이모티콘 사용]
+아래 목록에서 적재적소에만 사용. 남발 금지.
+𐐪𐑂 ⋆˚ ˖⁺ ᯓ★ ꔣ₊˚ 𝜗𝜚 ✧ ☆ ♡ ᕷ˖° ʚɞ ᰔᩚ ˚｡ ⑅ ·.˚ ₊: ⑉♥ ˚ʚ♡ɞ˚ ⋰˚☆ ·₊˚❀`;
+
+// ─────────────────────────────────────────────
+// 테마 / 액센트
+// ─────────────────────────────────────────────
+const ACCENT = {
+  lifestyle: '#5DCAA5',
+  viral:     '#EF9F27',
+  bias:      '#ED93B1',
+};
+
+let activeTheme = null;
+
+function applyAccent(theme) {
+  document.documentElement.style.setProperty('--accent', ACCENT[theme]);
+  document.getElementById('logo-mark').style.background = ACCENT[theme];
+}
+
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTheme = btn.dataset.theme;
+    applyAccent(activeTheme);
+    clearFieldError(document.getElementById('theme-error'));
+    clearGlobalError();
+  });
+});
+
+// ─────────────────────────────────────────────
+// API 키 토글
+// ─────────────────────────────────────────────
+const apiKeyInput  = document.getElementById('api-key');
+const btnToggleKey = document.getElementById('btn-toggle-key');
+
+// sessionStorage 복원 (탭 닫으면 자동 삭제)
+const _savedKey = sessionStorage.getItem('plot_api_key');
+if (_savedKey) apiKeyInput.value = _savedKey;
+
+btnToggleKey.addEventListener('click', () => {
+  const hidden = apiKeyInput.type === 'password';
+  apiKeyInput.type = hidden ? 'text' : 'password';
+  btnToggleKey.textContent = hidden ? '숨기기' : '보기';
+});
+
+apiKeyInput.addEventListener('input', () => {
+  sessionStorage.setItem('plot_api_key', apiKeyInput.value);
+  if (apiKeyInput.value.trim()) {
+    setInputError(apiKeyInput, false);
+    clearFieldError(document.getElementById('api-key-error'));
+  }
+});
+
+// ─────────────────────────────────────────────
+// 글자 수 카운터
+// ─────────────────────────────────────────────
+function updateCounter(input, counterEl, max) {
+  const len = input.value.length;
+  counterEl.textContent = `${len} / ${max}`;
+  counterEl.className = 'char-count' +
+    (len >= max ? ' full' : len >= max * 0.85 ? ' near' : '');
+}
+
+const inputTitle    = document.getElementById('input-title');
+const inputKeywords = document.getElementById('input-keywords');
+const inputExtra    = document.getElementById('input-extra');
+const countTitle    = document.getElementById('count-title');
+const countKeywords = document.getElementById('count-keywords');
+
+inputTitle.addEventListener('input', () => {
+  updateCounter(inputTitle, countTitle, 80);
+  if (inputTitle.value.trim()) {
+    setInputError(inputTitle, false);
+    clearFieldError(document.getElementById('title-error'));
+  }
+});
+
+inputKeywords.addEventListener('input', () => {
+  updateCounter(inputKeywords, countKeywords, 120);
+  if (inputKeywords.value.trim()) {
+    setInputError(inputKeywords, false);
+    clearFieldError(document.getElementById('keywords-error'));
+  }
+});
+
+// ─────────────────────────────────────────────
+// 유효성 검사 헬퍼
+// ─────────────────────────────────────────────
+function showFieldError(el, msg) {
+  clearTimeout(el._errTimer);
+  el.textContent = msg;
+  el.classList.add('visible');
+  el._errTimer = setTimeout(() => clearFieldError(el), 3000);
+}
+function clearFieldError(el) {
+  clearTimeout(el._errTimer);
+  el.classList.remove('visible');
+}
+function setInputError(input, on) { input.classList.toggle('error', on); }
+
+let _globalErrTimer;
+function showGlobalError(msg) {
+  clearTimeout(_globalErrTimer);
+  const el = document.getElementById('global-error');
+  el.textContent = msg;
+  el.classList.add('visible');
+  _globalErrTimer = setTimeout(clearGlobalError, 3000);
+}
+function clearGlobalError() {
+  clearTimeout(_globalErrTimer);
+  document.getElementById('global-error').classList.remove('visible');
+}
+
+function validate() {
+  let ok = true;
+  clearGlobalError();
+  if (!apiKeyInput.value.trim()) {
+    showFieldError(document.getElementById('api-key-error'), 'API 키를 입력해주세요.');
+    setInputError(apiKeyInput, true); ok = false;
+  }
+  if (!activeTheme) {
+    showFieldError(document.getElementById('theme-error'), '테마를 선택해주세요.');
+    ok = false;
+  }
+  if (!inputTitle.value.trim()) {
+    showFieldError(document.getElementById('title-error'), '매거진 제목을 입력해주세요.');
+    setInputError(inputTitle, true); ok = false;
+  }
+  if (!inputKeywords.value.trim()) {
+    showFieldError(document.getElementById('keywords-error'), '핵심 키워드를 입력해주세요.');
+    setInputError(inputKeywords, true); ok = false;
+  }
+  return ok;
+}
+
+// ─────────────────────────────────────────────
+// API 호출
+// ─────────────────────────────────────────────
+function setLoading(on) {
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+  document.getElementById('btn-regen').disabled = on;
+}
+
+async function generateCaption() {
+  if (!validate()) return;
+
+  const extra = inputExtra.value.trim();
+  const userContent = [
+    `테마: ${activeTheme}`,
+    `매거진 제목: ${inputTitle.value.trim()}`,
+    `핵심 키워드: ${inputKeywords.value.trim()}`,
+    `추가 요청: ${extra || '없음'}`,
+  ].join('\n');
+
+  setLoading(true);
+  clearGlobalError();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKeyInput.value.trim(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+    });
+
+    if (!res.ok) {
+      let msg = `오류가 발생했어요 (${res.status})`;
+      try { const j = await res.json(); if (j?.error?.message) msg = j.error.message; } catch (_) {}
+      if (res.status === 401) msg = 'API 키가 올바르지 않아요. 다시 확인해주세요.';
+      if (res.status === 429) msg = '요청이 너무 많아요. 잠시 후 다시 시도해주세요.';
+      throw new Error(msg);
+    }
+
+    const data = await res.json();
+    const caption = data?.content?.[0]?.text ?? '';
+    if (!caption) throw new Error('캡션을 받아오지 못했어요. 다시 시도해주세요.');
+
+    const resultBody = document.getElementById('result-body');
+    resultBody.textContent = caption;
+    const section = document.getElementById('section-result');
+    section.classList.add('visible');
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  } catch (err) {
+    showGlobalError(err.message || '알 수 없는 오류가 발생했어요.');
+  } finally {
+    setLoading(false);
+  }
+}
+
+document.getElementById('btn-generate').addEventListener('click', generateCaption);
+document.getElementById('btn-regen').addEventListener('click', generateCaption);
+
+document.getElementById('btn-copy').addEventListener('click', async () => {
+  const text = document.getElementById('result-body').textContent;
+  if (!text) return;
+  const btn = document.getElementById('btn-copy');
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '복사됨!';
+  } catch (_) {
+    btn.textContent = '복사 실패';
+  }
+  setTimeout(() => { btn.textContent = '전체 복사'; }, 1500);
+});
+
+
+// ═════════════════════════════════════════════
+// 특수문자 픽커
+// ═════════════════════════════════════════════
+
+// requestIdleCallback polyfill (Safari < 16)
+const ric = window.requestIdleCallback
+  || (cb => setTimeout(() => cb({ timeRemaining: () => 50 }), 1));
+
+// ── 카테고리 정의 ──
+const PICKER_CATEGORIES = [
+  {
+    id: 'star',
+    label: '별/빛/점',
+    ranges: [[0x2600, 0x26FF], [0x2700, 0x27BF], [0x2B50, 0x2B55]],
+  },
+  {
+    id: 'heart',
+    label: '하트/꽃',
+    ranges: [[0x2764, 0x2767], [0x2730, 0x273F], [0x1F650, 0x1F67F]],
+  },
+  {
+    id: 'arrow',
+    label: '화살표',
+    ranges: [[0x2190, 0x21FF], [0x27F0, 0x27FF], [0x2B00, 0x2BFF]],
+  },
+  {
+    id: 'frame',
+    label: '괄호/프레임',
+    ranges: [[0x3000, 0x303F], [0x2500, 0x257F], [0x25A0, 0x25FF]],
+  },
+  {
+    id: 'punct',
+    label: '점/선/구분',
+    ranges: [[0x2000, 0x206F], [0xFE10, 0xFE1F]],
+  },
+  {
+    id: 'curated',
+    label: '감성 큐레이션',
+    // pre-loaded — no ranges needed
+    items: [
+      '𐐪𐑂', '˖⁺', 'ꔣ₊˚', '𝜗𝜚', 'ʚɞ', 'ᰔᩚ', 'ᯓ★', '꙳', '⑅', 'ᕷ˖°',
+      '˚｡', '⋆﹥━﹤⋆', '·.˚', '₊:', '⑉♥', '˚ʚ♡ɞ˚', '⋰˚☆', '·₊˚❀',
+      'ʚဗီူɞ', 'ིི❤︎', 'ྀི❤︎', 'ᖭི༏༏ᖫྀ',
+      '₊˚ʚ', 'ᗢ₊˚ʚ', '⋆｡°✩', '˚✧₊⁺', '꒦꒷꒦꒷',
+    ],
+  },
+];
+
+// loaded data: { [catId]: Array<{char, label}> }
+const charData = {};
+let activeCatId = PICKER_CATEGORIES[0].id;
+let loadDone = false;
+
+// ── Canvas 필터 컨텍스트 ──
+const _canvas = document.createElement('canvas');
+const _ctx    = _canvas.getContext('2d');
+_ctx.font     = '16px serif';
+
+function isRenderable(cp) {
+  if (cp < 32) return false;
+  if (cp >= 127 && cp <= 159) return false;
+  if (cp === 0xFFFD) return false;
+  let char;
+  try { char = String.fromCodePoint(cp); } catch { return false; }
+  return _ctx.measureText(char).width > 2;
+}
+
+function collectFromRanges(ranges) {
+  const out = [];
+  for (const [start, end] of ranges) {
+    for (let cp = start; cp <= end; cp++) {
+      if (!isRenderable(cp)) continue;
+      const char = String.fromCodePoint(cp);
+      const hex = cp.toString(16).toUpperCase().padStart(4, '0');
+      out.push({ char, label: `U+${hex}` });
+    }
+  }
+  return out;
+}
+
+// ── 탭 렌더링 ──
+function buildTabs() {
+  const container = document.getElementById('picker-tabs');
+  container.innerHTML = '';
+  PICKER_CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'picker-tab' + (cat.id === activeCatId ? ' active' : '');
+    btn.textContent = cat.label;
+    btn.dataset.catId = cat.id;
+    btn.addEventListener('click', () => switchTab(cat.id));
+    container.appendChild(btn);
+  });
+}
+
+function switchTab(catId) {
+  activeCatId = catId;
+  document.querySelectorAll('.picker-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.catId === catId);
+  });
+  renderGridFor(catId);
+}
+
+// ── 그리드 렌더링 ──
+function renderGridFor(catId) {
+  const loading = document.getElementById('picker-loading');
+  const grid    = document.getElementById('picker-grid');
+  const data    = charData[catId];
+
+  if (!data) {
+    loading.style.display = 'block';
+    grid.style.display    = 'none';
+    return;
+  }
+
+  loading.style.display = 'none';
+  grid.style.display    = '';
+  grid.innerHTML = '';
+
+  data.forEach(({ char, label }) => {
+    const btn = document.createElement('button');
+    const isMulti = [...char].length > 1; // true grapheme clusters > 1
+    btn.className = 'pchar-btn' + (isMulti ? ' multi' : '');
+    btn.textContent = char;
+    btn.title = label || char;
+    btn.addEventListener('click', () => copyPickerChar(btn, char));
+    grid.appendChild(btn);
+  });
+}
+
+function copyPickerChar(btn, char) {
+  navigator.clipboard.writeText(char).catch(() => {});
+  btn.classList.add('copied');
+  setTimeout(() => btn.classList.remove('copied'), 800);
+}
+
+// ── 백그라운드 로드 (requestIdleCallback) ──
+function scheduleLoad(idx) {
+  if (idx >= PICKER_CATEGORIES.length) {
+    loadDone = true;
+    return;
+  }
+  const cat = PICKER_CATEGORIES[idx];
+
+  if (cat.items) {
+    // 큐레이션: 즉시 처리
+    charData[cat.id] = cat.items.map(char => ({ char, label: char }));
+    if (activeCatId === cat.id) renderGridFor(cat.id);
+    scheduleLoad(idx + 1);
+  } else {
+    ric(() => {
+      charData[cat.id] = collectFromRanges(cat.ranges);
+      if (activeCatId === cat.id) renderGridFor(cat.id);
+      scheduleLoad(idx + 1);
+    });
+  }
+}
+
+// ── 검색 ──
+const pickerSearch        = document.getElementById('picker-search');
+const pickerSearchPreview = document.getElementById('picker-search-preview');
+const previewChar         = document.getElementById('preview-char');
+const previewInfo         = document.getElementById('preview-info');
+const btnSearchCopy       = document.getElementById('btn-search-copy');
+
+pickerSearch.addEventListener('input', () => {
+  const val = pickerSearch.value.trim();
+  if (!val) {
+    pickerSearchPreview.style.display = 'none';
+    btnSearchCopy.style.display = 'none';
+    return;
+  }
+
+  let resolved = '';
+  let info     = '';
+
+  const uMatch = val.match(/^[Uu]\+?([0-9A-Fa-f]{1,6})$/);
+  if (uMatch) {
+    const cp = parseInt(uMatch[1], 16);
+    try {
+      resolved = String.fromCodePoint(cp);
+      info = `U+${cp.toString(16).toUpperCase().padStart(4, '0')}`;
+    } catch (_) {
+      resolved = '';
+    }
+  } else {
+    resolved = val;
+    const pts = [...val].map(c =>
+      'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')
+    ).join(' ');
+    info = pts;
+  }
+
+  if (!resolved) {
+    pickerSearchPreview.style.display = 'none';
+    btnSearchCopy.style.display = 'none';
+    return;
+  }
+
+  previewChar.textContent = resolved;
+  previewInfo.textContent = info;
+  pickerSearchPreview.style.display = 'flex';
+  btnSearchCopy.style.display = '';
+  btnSearchCopy._resolved = resolved;
+});
+
+btnSearchCopy.addEventListener('click', () => {
+  const char = btnSearchCopy._resolved;
+  if (!char) return;
+  navigator.clipboard.writeText(char).catch(() => {});
+  btnSearchCopy.textContent = '복사됨!';
+  setTimeout(() => { btnSearchCopy.textContent = '복사'; }, 1500);
+});
+
+// ── 픽커 토글 ──
+const pickerToggle = document.getElementById('picker-toggle');
+const pickerBody   = document.getElementById('picker-body');
+
+pickerToggle.addEventListener('click', () => {
+  const open = pickerBody.classList.toggle('open');
+  pickerToggle.classList.toggle('open', open);
+
+  // 처음 열릴 때 초기 렌더링
+  if (open && !pickerToggle._initialized) {
+    pickerToggle._initialized = true;
+    buildTabs();
+    renderGridFor(activeCatId);
+    scheduleLoad(0);
+  }
+});
+</script>
+
+</body>
+</html>
