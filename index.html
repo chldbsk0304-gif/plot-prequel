@@ -376,7 +376,7 @@
     </div>
     <div id="api-key-error" class="field-error" role="alert">API 키를 입력해주세요.</div>
     <p class="api-notice">
-      키는 이 탭에서만 임시 유지되며 외부로 전송되지 않아요. 탭을 닫으면 삭제됩니다.&nbsp;
+      키는 이 브라우저에 저장되며 외부로 전송되지 않아요.&nbsp;
       <a href="https://console.anthropic.com" target="_blank" rel="noopener">키 발급 →</a>
     </p>
   </div>
@@ -506,6 +506,7 @@ const SYSTEM_PROMPT = `당신은 개인 취향 아카이빙 플랫폼 'Plot'의 
 핀터레스트 감성의 '외국 언니' 무드로, 세련되면서도 친근한 말투를 사용합니다.
 
 [출력 형식 — 반드시 이 구조를 지킵니다]
+※ 각 줄 사이에 빈 줄(빈 엔터) 절대 금지. 줄바꿈은 딱 1번씩만 사용.
 Towards [테마]🏝️
 [텍스트 이모티콘] [핵심 키워드형 주제 문구] [텍스트 이모티콘]
 (바디)
@@ -639,8 +640,8 @@ function clearGlobalError() {
 const apiKeyInput  = document.getElementById('api-key');
 const btnToggleKey = document.getElementById('btn-toggle-key');
 
-// sessionStorage 복원 (탭 닫으면 자동 삭제)
-const _savedKey = sessionStorage.getItem('plot_api_key');
+// localStorage 복원 (영구 저장)
+const _savedKey = localStorage.getItem('plot_api_key');
 if (_savedKey) apiKeyInput.value = _savedKey;
 
 btnToggleKey.addEventListener('click', () => {
@@ -650,7 +651,7 @@ btnToggleKey.addEventListener('click', () => {
 });
 
 apiKeyInput.addEventListener('input', () => {
-  sessionStorage.setItem('plot_api_key', apiKeyInput.value);
+  localStorage.setItem('plot_api_key', apiKeyInput.value);
   if (apiKeyInput.value.trim()) {
     setInputError(apiKeyInput, false);
     clearFieldError(document.getElementById('api-key-error'));
@@ -800,12 +801,28 @@ const PICKER_CATEGORIES = [
   {
     id: 'curated',
     label: '감성 큐레이션',
-    // pre-loaded — no ranges needed
     items: [
+      // 미니멀 이모티콘
       '𐐪𐑂', '˖⁺', 'ꔣ₊˚', '𝜗𝜚', 'ʚɞ', 'ᰔᩚ', 'ᯓ★', '꙳', '⑅', 'ᕷ˖°',
+      // 데코 시퀀스
       '˚｡', '⋆﹥━﹤⋆', '·.˚', '₊:', '⑉♥', '˚ʚ♡ɞ˚', '⋰˚☆', '·₊˚❀',
+      '⋆｡°✩', '˚✧₊⁺', '꒦꒷꒦꒷', '₊˚ʚ', 'ᗢ₊˚ʚ',
+      // 감성 복합
       'ʚဗီူɞ', 'ིི❤︎', 'ྀི❤︎', 'ᖭི༏༏ᖫྀ',
-      '₊˚ʚ', 'ᗢ₊˚ʚ', '⋆｡°✩', '˚✧₊⁺', '꒦꒷꒦꒷',
+      '⋆｡‧˚ʚ♡ɞ˚‧｡⋆', '✩°｡⋆', '˚₊· ͟͟͞͞➳❥', '·˚ ༘', '₊˚ˑ༄',
+      '﹌﹌', '°• ☆', '✦ ✦', '•·.·''·.·•', '»»————',
+    ],
+  },
+  {
+    id: 'kaomoji',
+    label: '카오모지',
+    items: [
+      '( •⌄• ू )✧', '(◕ᴗ◕✿)', '(˶ᵔ ᵕ ᵔ˶)', '꒰ঌ( ˶ᵕ˶)໒꒱', '(◍•ᴗ•◍)✧',
+      '(っ˘ω˘ς)', 'ʕ•ᴥ•ʔ', '₍ᐢ. ̫.ᐢ₎', '(｡♡‿♡｡)', '(˶˃ᵕ˂˶)',
+      'ヾ(≧▽≦*)o', '٩(ˊᗜˋ*)و', '(´｡• ᵕ •｡`) ♡', '( ¯▿¯ )', '٩(◕‿◕)۶',
+      '(⊃｡•́‿•̀｡)⊃', '˘͈ᵕ˘͈', '(๑>◡<๑)', '⸜(｡˃ᵕ˂)⸝', '≽^•⩊•^≼',
+      '(*˘︶˘*)', '(⁠ ⁠ꈍ⁠ᴗ⁠ꈍ⁠)', 'ꕀ(ᵒ꒳ᵒ)ꕀ', '(◠‿◠✿)', 'ง •̀_•́)ง',
+      '(づ￣ ³￣)づ', '(＾▽＾)', '(ᵔ◡ᵔ)', '♡( ◡‿◡ )', '˶ᵔ ᵕ ᵔ˶',
     ],
   },
 ];
